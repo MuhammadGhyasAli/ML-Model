@@ -2,13 +2,20 @@ import joblib
 import pandas as pd
 import numpy as np
 import os
+import functools
 from flask import Flask, request, render_template, jsonify
 
 app = Flask(__name__,
     template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model = joblib.load(os.path.join(BASE_DIR, "student_depression_ensemble_v3_optimized.pkl"))
+MODEL_PATH = os.path.join(BASE_DIR, "student_depression_ensemble_v3_optimized.pkl")
+
+
+def get_model():
+    if not hasattr(get_model, "_model"):
+        get_model._model = joblib.load(MODEL_PATH)
+    return get_model._model
 
 FEATURE_NAMES = [
     'Gender', 'Age', 'City', 'Profession', 'Academic Pressure',
@@ -146,40 +153,15 @@ def predict():
                 return render_template("result.html", error=f"'{field}' must be between {lo} and {hi}.")
             data[field] = val
 
+        mdl = get_model()
         input_df = pd.DataFrame([data])
         input_df = engineer_features(input_df)
 
-        prediction = model.predict(input_df)[0]
-        probability = model.predict_proba(input_df)[0]
+        prediction = mdl.predict(input_df)[0]
+        probability = mdl.predict_proba(input_df)[0]
 
         no_dep_prob = round(probability[0] * 100, 2)
         dep_prob = round(probability[1] * 100, 2)
-
-        if dep_prob >= 75:
-            risk_level = "HIGH RISK"
-        elif dep_prob >= 50:
-            risk_level = "MODERATE RISK"
-        elif dep_prob >= 25:
-            risk_level = "LOW RISK"
-        else:
-            risk_level = "VERY LOW RISK"
-
-        if prediction == 1:
-            advice = [
-                "Please consult a mental health professional immediately.",
-                "Talk to someone you trust about your feelings.",
-                "Consider stress management techniques (meditation, yoga).",
-                "Ensure you are getting enough sleep (7-8 hours).",
-                "Maintain a healthy diet and exercise regularly.",
-            ]
-        else:
-            advice = [
-                "Keep maintaining a healthy lifestyle.",
-                "Continue managing stress effectively.",
-                "Stay connected with friends and family.",
-                "Keep a good sleep schedule (7-8 hours).",
-                "Monitor your mental health regularly.",
-            ]
 
         return render_template(
             "result.html",
@@ -243,11 +225,12 @@ def api_predict():
                 return jsonify({"error": f"'{field}' must be between {lo} and {hi}."}), 400
             data[field] = val
 
+        mdl = get_model()
         input_df = pd.DataFrame([data])
         input_df = engineer_features(input_df)
 
-        prediction = model.predict(input_df)[0]
-        probability = model.predict_proba(input_df)[0]
+        prediction = mdl.predict(input_df)[0]
+        probability = mdl.predict_proba(input_df)[0]
 
         return jsonify({
             "prediction": int(prediction),
@@ -256,6 +239,22 @@ def api_predict():
         })
     except Exception as e:
         return jsonify({"error": "An internal error occurred processing the request."}), 500
+
+
+@app.route("/health")
+def health():
+    model_ok = False
+    model_error = None
+    try:
+        mdl = get_model()
+        model_ok = True
+    except Exception as e:
+        model_error = str(e)
+    return jsonify({
+        "status": "ok",
+        "model_loaded": model_ok,
+        "model_error": model_error
+    })
 
 
 if __name__ == "__main__":
