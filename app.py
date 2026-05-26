@@ -1,11 +1,14 @@
 import joblib
 import pandas as pd
 import numpy as np
+import os
 from flask import Flask, request, render_template, jsonify
 
-app = Flask(__name__)
+app = Flask(__name__,
+    template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 
-model = joblib.load("student_depression_ensemble_v3_optimized.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model = joblib.load(os.path.join(BASE_DIR, "student_depression_ensemble_v3_optimized.pkl"))
 
 FEATURE_NAMES = [
     'Gender', 'Age', 'City', 'Profession', 'Academic Pressure',

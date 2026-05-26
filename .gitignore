@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.vercel/
+.vscode/
+.DS_Store
+*.ipynb
+*.csv
+*.png
+thumbs.db
