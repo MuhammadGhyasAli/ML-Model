@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Clinical depression risk screening powered by a trained ensemble model. Multi-factor assessment across demographics, academics, and lifestyle.">
+<title>Depression Risk Screening &mdash; Clinical ML Model</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-4l-3 9L9 3l-3 9H2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --primary-subtle: rgba(99,102,241,0.08);
+  --primary-glow: rgba(99,102,241,0.15);
+  
+  --bg: #fafbfc;
+  --surface: #ffffff;
+  --surface-alt: #f8f9fb;
+  --surface-hover: #f1f3f9;
+  --border: #e4e7ee;
+  --border-focus: #6366f1;
+  
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  
+  --success: #10b981;
+  --success-bg: #d1fae5;
+  --danger: #ef4444;
+  --danger-bg: #fee2e2;
+  --warning: #f59e0b;
+  --warning-bg: #fef3c7;
+  --info: #3b82f6;
+  
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.12);
+  
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layout */
+.app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 260px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 28px 20px;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  display: flex; align-items: center; gap: 12px;
+  font-weight: 700; font-size: 17px; color: var(--text);
+  margin-bottom: 40px; padding: 0 8px;
+}
+
+.sidebar-logo svg { 
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(99,102,241,0.2));
+}
+
+.sidebar-nav { list-style: none; flex: 1; }
+
+.sidebar-nav li a {
+  display: flex; align-items: center; gap: 12px;
+  color: inherit; text-decoration: none; width: 100%;
+}
+
+.sidebar-nav li {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  margin-bottom: 4px; cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.sidebar-nav li:hover:not(.active) {
+  background: var(--surface-hover);
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+.sidebar-nav li.active {
+  background: linear-gradient(135deg, var(--primary-subtle) 0%, var(--primary-glow) 100%);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+}
+
+.sidebar-nav li.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: var(--primary);
+  border-radius: 0 3px 3px 0;
+}
+
+.sidebar-footer {
+  font-size: 12px; color: var(--text-muted);
+  padding: 16px 12px 0; border-top: 1px solid var(--border);
+  margin-top: 20px; line-height: 1.5;
+}
+
+.sidebar-footer strong { 
+  display: block; 
+  color: var(--text-secondary); 
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* Main */
+.main { 
+  flex: 1; min-width: 0; 
+  padding: 40px 48px 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.main-header { 
+  margin-bottom: 32px;
+  animation: fadeInDown 0.5s ease-out;
+}
+
+.main-header h1 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--primary-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.main-header p {
+  font-size: 15px; color: var(--text-secondary); 
+  max-width: 600px; line-height: 1.6;
+}
+
+/* Progress Bar */
+.progress-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.progress-percentage {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.progress-bar-track {
+  height: 6px;
+  background: var(--surface-alt);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: 10px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(99,102,241,0.3);
+}
+
+/* Model Banner */
+.model-banner {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 28px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+.model-stat { 
+  display: flex; align-items: center; gap: 10px; 
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.model-stat-icon {
+  width: 36px; height: 36px;
+  background: var(--primary-subtle);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary);
+}
+
+.model-stat-info { display: flex; flex-direction: column; }
+.model-stat-value { 
+  font-weight: 700; 
+  font-size: 18px;
+  color: var(--text);
+  line-height: 1.2;
+}
+.model-stat-label { 
+  color: var(--text-muted); 
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.model-divider { 
+  width: 1px; height: 40px; 
+  background: var(--border);
+  margin: 0 8px;
+}
+
+.model-status {
+  margin-left: auto; 
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; 
+  color: var(--success); 
+  font-weight: 600;
+  background: var(--success-bg);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.model-status-dot {
+  width: 8px; height: 8px; 
+  border-radius: 50%; 
+  background: var(--success);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* Form */
+.form-grid { 
+  display: grid; 
+  gap: 28px;
+  animation: fadeInUp 0.5s ease-out 0.2s both;
+}
+
+.form-section { 
+  background: var(--surface); 
+  border: 1px solid var(--border); 
+  border-radius: var(--radius-lg); 
+  box-shadow: var(--shadow-sm); 
+  overflow: hidden;
+  transition: all var(--transition);
+}
+
+.form-section:hover {
+  box-shadow: var(--shadow);
+  border-color: rgba(99,102,241,0.2);
+}
+
+.form-section-header {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-alt);
+  display: flex; align-items: center; gap: 12px;
+}
+
+.form-section-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+}
+
+.form-section-title-wrap { flex: 1; }
+
+.form-section-header h3 { 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.form-section-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.form-section-step { 
+  font-size: 12px; 
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.form-section-body { padding: 28px; }
+
+.form-row { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .form-row-2 { grid-template-columns: repeat(2, 1fr); }
+  .form-row-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Field */
+.field { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px;
+  position: relative;
+}
+
+.field-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 14px; 
+  font-weight: 600; 
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+  position: relative;
+}
+
+.field-tooltip:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: scale(1.1);
+}
+
+.field-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--text);
+  color: white;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+  min-width: 200px;
+  max-width: 90vw;
+  white-space: normal;
+  text-align: center;
+}
+
+.field-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition);
+}
+
+.field-tooltip:hover::after,
+.field-tooltip:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.field input, 
+.field select {
+  padding: 12px 16px; 
+  background: var(--surface);
+  border: 2px solid var(--border); 
+  border-radius: var(--radius-sm);
+  color: var(--text); 
+  font-size: 14px; 
+  font-family: inherit;
+  transition: all var(--transition);
+  font-weight: 500;
+}
+
+.field input:hover,
+.field select:hover {
+  border-color: var(--text-muted);
+}
+
+.field select {
+  -webkit-appearance: none; 
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat; 
+  background-position: right 14px center; 
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.field input:focus, 
+.field select:focus {
+  outline: none; 
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+  background: white;
+}
+
+.field input.success,
+.field select.success {
+  border-color: var(--success);
+  background: rgba(16,185,129,0.02);
+}
+
+.field .error-border { 
+  border-color: var(--danger);
+  background: rgba(239,68,68,0.02);
+}
+
+.field .error-border:focus { 
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.1); 
+  border-color: var(--danger); 
+}
+
+.field .hint { 
+  font-size: 12px; 
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field .error-text { 
+  font-size: 12px; 
+  color: var(--danger); 
+  display: none;
+  font-weight: 500;
+  animation: shake 0.3s ease-in-out;
+}
+
+.field .error-text.visible { 
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field .error-text.visible::before {
+  content: '⚠';
+  font-size: 14px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.field .success-text {
+  font-size: 12px;
+  color: var(--success);
+  display: none;
+  font-weight: 500;
+  align-items: center;
+  gap: 4px;
+}
+
+.field .success-text.visible {
+  display: flex;
+}
+
+.field .success-text.visible::before {
+  content: '✓';
+  font-size: 14px;
+}
+
+/* Radio Group (Google Forms style) */
+.radio-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  flex: 1;
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 10px 6px 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  background: var(--surface);
+  position: relative;
+}
+
+.radio-option:hover {
+  border-color: var(--primary-light);
+  background: var(--primary-subtle);
+}
+
+.radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  background: var(--surface);
+}
+
+.radio-option input[type="radio"]:checked ~ .radio-circle {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+
+.radio-option input[type="radio"]:checked ~ .radio-label {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.radio-option:has(input[type="radio"]:checked),
+.radio-option.checked {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.radio-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+  transition: all var(--transition);
+  font-weight: 500;
+}
+
+/* Character Counter */
+.char-counter {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Disclaimer */
+.disclaimer {
+  font-size: 14px; 
+  color: var(--text-secondary); 
+  line-height: 1.7;
+  padding: 20px 24px; 
+  background: linear-gradient(135deg, var(--warning-bg) 0%, #fffbeb 100%);
+  border: 2px solid #fde68a; 
+  border-radius: var(--radius);
+  margin-top: 32px;
+  display: flex;
+  gap: 16px;
+  animation: fadeInUp 0.5s ease-out 0.3s both;
+}
+
+.disclaimer-icon {
+  flex-shrink: 0;
+  font-size: 24px;
+}
+
+.disclaimer strong {
+  color: var(--warning);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Submit Bar */
+.submit-bar {
+  display: flex; 
+  align-items: center; 
+  gap: 20px;
+  background: var(--surface); 
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg); 
+  padding: 24px 28px;
+  box-shadow: var(--shadow);
+  margin-top: 12px;
+  animation: fadeInUp 0.5s ease-out 0.4s both;
+  flex-wrap: wrap;
+}
+
+.submit-bar-content {
+  flex: 1;
+  min-width: 250px;
+}
+
+.submit-bar-content p { 
+  font-size: 14px; 
+  color: var(--text-secondary); 
+  margin-bottom: 4px;
+}
+
+.submit-bar-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.btn {
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px; 
+  border-radius: var(--radius-sm);
+  font-size: 15px; 
+  font-weight: 600; 
+  font-family: inherit;
+  cursor: pointer; 
+  transition: all var(--transition);
+  border: none; 
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+}
+
+.btn-primary:hover:not(:disabled) { 
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled { 
+  opacity: 0.6; 
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary .spinner {
+  display: none; 
+  width: 18px; 
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3); 
+  border-top-color: #fff;
+  border-radius: 50%; 
+  animation: spin 0.7s linear infinite;
+}
+
+.btn-primary.loading .btn-text { 
+  opacity: 0;
+}
+
+.btn-primary.loading .spinner { 
+  display: inline-block;
+  position: absolute;
+}
+
+@keyframes spin { 
+  to { transform: rotate(360deg); } 
+}
+
+/* Overlay */
+.overlay {
+  display: none; 
+  position: fixed; 
+  inset: 0;
+  background: rgba(15,23,42,0.6);
+  backdrop-filter: blur(8px);
+  z-index: 100; 
+  align-items: center; 
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.overlay.active { display: flex; }
+
+.overlay-card {
+  background: var(--surface); 
+  border-radius: var(--radius-lg);
+  padding: 48px;
+  text-align: center;
+  box-shadow: var(--shadow-xl); 
+  max-width: 420px;
+  margin: 20px;
+  animation: scaleIn 0.3s ease-out;
+}
+
+.overlay-spinner {
+  width: 48px; 
+  height: 48px; 
+  margin: 0 auto 24px;
+  border: 4px solid var(--border); 
+  border-top-color: var(--primary);
+  border-radius: 50%; 
+  animation: spin 0.8s linear infinite;
+}
+
+.overlay-text { 
+  font-size: 18px; 
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.overlay-sub { 
+  font-size: 14px; 
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.overlay-progress {
+  margin-top: 24px;
+  height: 4px;
+  background: var(--surface-alt);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.overlay-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: 10px;
+  animation: progressLoad 2s ease-in-out infinite;
+}
+
+@keyframes progressLoad {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes fadeInDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .main { padding: 32px 24px 60px; }
+  .model-divider { display: none; }
+  .model-banner { gap: 16px; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { 
+    position: fixed;
+    left: -260px;
+    z-index: 50;
+    transition: left 0.3s ease;
+  }
+  
+  .sidebar.mobile-open {
+    left: 0;
+  }
+  
+  .main { 
+    padding: 24px 16px 50px;
+    width: 100%;
+  }
+  
+  .main-header h1 { font-size: 24px; }
+  
+  .model-banner {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+  
+  .model-stat { 
+    width: calc(50% - 6px);
+  }
+  
+  .model-status {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+  
+  .form-section-header {
+    padding: 16px 20px;
+  }
+  
+  .form-section-body { padding: 20px; }
+  
+  .form-row { 
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .submit-bar {
+    flex-direction: column;
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .radio-option {
+    min-width: 52px;
+    padding: 8px 4px 6px;
+  }
+  
+  .radio-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+  
+  .radio-label {
+    font-size: 10px;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+  
+  .overlay-card {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-header h1 { font-size: 20px; }
+  .main-header p { font-size: 14px; }
+  
+  .model-banner { padding: 12px 16px; gap: 8px; }
+  .model-stat-icon { width: 28px; height: 28px; }
+  .model-stat-value { font-size: 15px; }
+  .model-stat-label { font-size: 11px; }
+  
+  .form-section-header { padding: 14px 16px; gap: 10px; }
+  .form-section-header h3 { font-size: 14px; }
+  .form-section-step { font-size: 11px; padding: 4px 10px; }
+  .form-section-body { padding: 16px; }
+  .form-row { gap: 16px; }
+  
+  .radio-group { gap: 6px; }
+  .radio-option { 
+    min-width: 48px; 
+    padding: 6px 3px 5px; 
+  }
+  .radio-circle { 
+    width: 28px; 
+    height: 28px; 
+    font-size: 12px; 
+  }
+  .radio-label { font-size: 9px; }
+  
+  .field input, .field select { padding: 10px 12px; font-size: 13px; }
+  .field label { font-size: 13px; }
+  
+  .progress-container { padding: 14px 16px; }
+  
+  .overlay-card { padding: 28px 20px; margin: 16px; }
+  .overlay-text { font-size: 16px; }
+  .overlay-sub { font-size: 13px; }
+  
+  .submit-bar { padding: 16px; }
+  
+  .card { padding: 20px 16px; }
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  z-index: 60;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: flex; }
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .sidebar,
+  .submit-bar,
+  .disclaimer,
+  .model-banner {
+    display: none;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Depression Screen
+    </div>
+    <ul class="sidebar-nav">
+      <li class="active">
+        <a href="/">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Assessment
+        </a>
+      </li>
+      <li>
+        <a href="/about">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          About the Model
+        </a>
+      </li>
+      <li>
+        <a href="/documentation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Documentation
+        </a>
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <strong>Ensemble Model v3.0</strong>
+      Trained on 27.9K clinical samples with 99.2% validation accuracy
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="main-header">
+      <h1>Depression Risk Screening</h1>
+      <p>Complete the comprehensive assessment below. Our ensemble model evaluates 32 clinical features across demographics, academics, and lifestyle to produce an evidence-based risk estimate.</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+      <div class="progress-header">
+        <div class="progress-title">Assessment Progress</div>
+        <div class="progress-percentage" id="progressPercentage">0%</div>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Model Info Bar -->
+    <div class="model-banner">
+      <div class="model-stat">
+        <div class="model-stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="model-stat-info">
+          <div class="model-stat-value">4</div>
+          <div class="model-stat-label">Model Ensemble</div>
+        </div>
+      </div>
+      <div class="model-divider"></div>
+      <div class="model-stat">
+        <div class="model-stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="model-stat-info">
+          <div class="model-stat-value">99.2%</div>
+          <div class="model-stat-label">AUC-ROC</div>
+        </div>
+      </div>
+      <div class="model-divider"></div>
+      <div class="model-stat">
+        <div class="model-stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="model-stat-info">
+          <div class="model-stat-value">32</div>
+          <div class="model-stat-label">Features</div>
+        </div>
+      </div>
+      <div class="model-divider"></div>
+      <div class="model-stat">
+        <div class="model-stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="model-stat-info">
+          <div class="model-stat-value">27.9K</div>
+          <div class="model-stat-label">Training Samples</div>
+        </div>
+      </div>
+      <div class="model-status">
+        <span class="model-status-dot"></span> Model Ready
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="assessmentForm" action="/predict" method="POST" novalidate>
+      <div class="form-grid">
+
+        <!-- Section 1: Demographics -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="form-section-title-wrap">
+              <h3>Demographics</h3>
+              <div class="form-section-subtitle">Basic personal information</div>
+            </div>
+            <span class="form-section-step">Step 1 of 3</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-row form-row-2">
+              <div class="field">
+                <label for="gender">
+                  Gender
+                  <span class="field-tooltip" data-tooltip="Biological sex assigned at birth">?</span>
+                </label>
+                <select id="gender" name="Gender" required>
+                  <option value="1">Male</option>
+                  <option value="0">Female</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="age">
+                  Age
+                  <span class="field-tooltip" data-tooltip="Current age in years (10-50)">?</span>
+                </label>
+                <input type="number" id="age" name="Age" min="10" max="50" placeholder="e.g. 22" required>
+                <span class="error-text" id="age-error">Age must be between 10 and 50</span>
+                <span class="success-text" id="age-success">Valid age entered</span>
+              </div>
+              <div class="field">
+                <label for="city">
+                  City
+                  <span class="field-tooltip" data-tooltip="Enter your current city of residence">?</span>
+                </label>
+                <input type="text" id="city" name="City" placeholder="e.g. Karachi, Lahore, Mumbai" required>
+                <span class="hint">Type your current city name</span>
+              </div>
+            </div>
+            <input type="hidden" name="Profession" value="Student">
+          </div>
+        </div>
+
+        <!-- Section 2: Academic & Work -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <div class="form-section-title-wrap">
+              <h3>Academic &amp; Work</h3>
+              <div class="form-section-subtitle">Education and employment details</div>
+            </div>
+            <span class="form-section-step">Step 2 of 3</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-row form-row-2">
+              <div class="field">
+                <label for="degree">
+                  Degree
+                  <span class="field-tooltip" data-tooltip="Enter your degree name or current program">?</span>
+                </label>
+                <input type="text" id="degree" name="Degree" placeholder="e.g. BSc Computer Science, MBA" required>
+                <span class="hint">Type your degree or qualification</span>
+              </div>
+              <div class="field">
+                <label for="cgpa">
+                  CGPA <span style="color:var(--text-muted);font-weight:400;">/ 4.0 Scale</span>
+                  <span class="field-tooltip" data-tooltip="Cumulative Grade Point Average on 4.0 scale">?</span>
+                </label>
+                <input type="number" id="cgpa" name="CGPA" min="0" max="4.0" step="0.01" placeholder="e.g. 3.20" required>
+                <span class="hint">Current or most recent academic performance</span>
+                <span class="error-text" id="cgpa-error">Enter a value between 0.00 and 4.00</span>
+                <span class="success-text" id="cgpa-success">Valid CGPA</span>
+              </div>
+              <div class="field">
+                <label>
+                  Academic Pressure
+                  <span class="field-tooltip" data-tooltip="Perceived stress level from academic demands">?</span>
+                </label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="Academic Pressure" value="1" required><span class="radio-circle">1</span><span class="radio-label">Very Low</span></label>
+                  <label class="radio-option"><input type="radio" name="Academic Pressure" value="2"><span class="radio-circle">2</span><span class="radio-label">Low</span></label>
+                  <label class="radio-option"><input type="radio" name="Academic Pressure" value="3" checked><span class="radio-circle">3</span><span class="radio-label">Moderate</span></label>
+                  <label class="radio-option"><input type="radio" name="Academic Pressure" value="4"><span class="radio-circle">4</span><span class="radio-label">High</span></label>
+                  <label class="radio-option"><input type="radio" name="Academic Pressure" value="5"><span class="radio-circle">5</span><span class="radio-label">Very High</span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>
+                  Study Satisfaction
+                  <span class="field-tooltip" data-tooltip="Overall satisfaction with academic program">?</span>
+                </label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="Study Satisfaction" value="1" required><span class="radio-circle">1</span><span class="radio-label">Very Dissat.</span></label>
+                  <label class="radio-option"><input type="radio" name="Study Satisfaction" value="2"><span class="radio-circle">2</span><span class="radio-label">Dissatisfied</span></label>
+                  <label class="radio-option"><input type="radio" name="Study Satisfaction" value="3" checked><span class="radio-circle">3</span><span class="radio-label">Neutral</span></label>
+                  <label class="radio-option"><input type="radio" name="Study Satisfaction" value="4"><span class="radio-circle">4</span><span class="radio-label">Satisfied</span></label>
+                  <label class="radio-option"><input type="radio" name="Study Satisfaction" value="5"><span class="radio-circle">5</span><span class="radio-label">Very Sat.</span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>
+                  Work Pressure
+                  <span class="field-tooltip" data-tooltip="Perceived stress from job or work responsibilities">?</span>
+                </label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="Work Pressure" value="1" required><span class="radio-circle">1</span><span class="radio-label">Very Low</span></label>
+                  <label class="radio-option"><input type="radio" name="Work Pressure" value="2"><span class="radio-circle">2</span><span class="radio-label">Low</span></label>
+                  <label class="radio-option"><input type="radio" name="Work Pressure" value="3" checked><span class="radio-circle">3</span><span class="radio-label">Moderate</span></label>
+                  <label class="radio-option"><input type="radio" name="Work Pressure" value="4"><span class="radio-circle">4</span><span class="radio-label">High</span></label>
+                  <label class="radio-option"><input type="radio" name="Work Pressure" value="5"><span class="radio-circle">5</span><span class="radio-label">Very High</span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label>
+                  Job Satisfaction
+                  <span class="field-tooltip" data-tooltip="Overall satisfaction with current employment">?</span>
+                </label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="Job Satisfaction" value="1" required><span class="radio-circle">1</span><span class="radio-label">Very Dissat.</span></label>
+                  <label class="radio-option"><input type="radio" name="Job Satisfaction" value="2"><span class="radio-circle">2</span><span class="radio-label">Dissatisfied</span></label>
+                  <label class="radio-option"><input type="radio" name="Job Satisfaction" value="3" checked><span class="radio-circle">3</span><span class="radio-label">Neutral</span></label>
+                  <label class="radio-option"><input type="radio" name="Job Satisfaction" value="4"><span class="radio-circle">4</span><span class="radio-label">Satisfied</span></label>
+                  <label class="radio-option"><input type="radio" name="Job Satisfaction" value="5"><span class="radio-circle">5</span><span class="radio-label">Very Sat.</span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label for="work-study-hours">
+                  Work / Study Hours
+                  <span class="field-tooltip" data-tooltip="Average hours per day spent working or studying">?</span>
+                </label>
+                <input type="number" id="work-study-hours" name="Work/Study Hours" min="0" max="20" placeholder="e.g. 8" required>
+                <span class="hint">Average hours per day</span>
+                <span class="error-text" id="hours-error">Enter a value between 0 and 20</span>
+                <span class="success-text" id="hours-success">Valid hours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Lifestyle & Health -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div class="form-section-title-wrap">
+              <h3>Lifestyle &amp; Health History</h3>
+              <div class="form-section-subtitle">Health behaviors and mental health history</div>
+            </div>
+            <span class="form-section-step">Step 3 of 3</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-row form-row-2">
+              <div class="field">
+                <label for="sleep-duration">
+                  Sleep Duration
+                  <span class="field-tooltip" data-tooltip="Average hours of sleep per night">?</span>
+                </label>
+                <select id="sleep-duration" name="Sleep Duration" required>
+                  <option value="7-8 hours">7-8 hours (Optimal)</option>
+                  <option value="Less than 5 hours">&lt; 5 hours (Insufficient)</option>
+                  <option value="5-6 hours">5-6 hours (Below Average)</option>
+                  <option value="More than 8 hours">&gt; 8 hours (Extended)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dietary-habits">
+                  Dietary Habits
+                  <span class="field-tooltip" data-tooltip="Overall quality of daily nutritional intake">?</span>
+                </label>
+                <select id="dietary-habits" name="Dietary Habits" required>
+                  <option value="Healthy">Healthy — Balanced nutrition</option>
+                  <option value="Moderate">Moderate — Mixed quality</option>
+                  <option value="Unhealthy">Unhealthy — Poor nutrition</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>
+                  Financial Stress Level
+                  <span class="field-tooltip" data-tooltip="Degree of worry about financial situation">?</span>
+                </label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="Financial Stress" value="1" required><span class="radio-circle">1</span><span class="radio-label">None</span></label>
+                  <label class="radio-option"><input type="radio" name="Financial Stress" value="2"><span class="radio-circle">2</span><span class="radio-label">Low</span></label>
+                  <label class="radio-option"><input type="radio" name="Financial Stress" value="3" checked><span class="radio-circle">3</span><span class="radio-label">Moderate</span></label>
+                  <label class="radio-option"><input type="radio" name="Financial Stress" value="4"><span class="radio-circle">4</span><span class="radio-label">High</span></label>
+                  <label class="radio-option"><input type="radio" name="Financial Stress" value="5"><span class="radio-circle">5</span><span class="radio-label">Severe</span></label>
+                </div>
+              </div>
+              <div class="field">
+                <label for="suicidal-thoughts">
+                  History of Suicidal Ideation
+                  <span class="field-tooltip" data-tooltip="Past or present thoughts of self-harm">?</span>
+                </label>
+                <select id="suicidal-thoughts" name="Have you ever had suicidal thoughts ?" required>
+                  <option value="0">No</option>
+                  <option value="1">Yes</option>
+                </select>
+                <span class="hint">This information is confidential and used for risk assessment only</span>
+              </div>
+              <div class="field">
+                <label for="family-history">
+                  Family History of Mental Illness
+                  <span class="field-tooltip" data-tooltip="Known mental health conditions in immediate family">?</span>
+                </label>
+                <select id="family-history" name="Family History of Mental Illness" required>
+                  <option value="0">No known history</option>
+                  <option value="1">Yes</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="disclaimer">
+        <div class="disclaimer-icon">⚠️</div>
+        <div>
+          <strong>Medical Disclaimer</strong>
+          This tool provides a statistical risk estimate based on population data and machine learning models. It is NOT a clinical diagnosis and should not replace professional medical advice. If you or someone you know is experiencing a mental health crisis, please contact a qualified mental health professional, call your local crisis helpline, or go to the nearest emergency room immediately.
+        </div>
+      </div>
+
+      <div class="submit-bar">
+        <div class="submit-bar-content">
+          <p>Ready to generate your personalized depression risk assessment</p>
+          <div class="submit-bar-meta">The ensemble model will analyze <strong>32 clinical features</strong> including 16 engineered indicators</div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <span class="btn-text">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Run Screening
+          </span>
+          <span class="spinner"></span>
+        </button>
+      </div>
+    </form>
+
+  </main>
+</div>
+
+<!-- Mobile Menu Button -->
+<button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
+<!-- Loading Overlay -->
+<div class="overlay" id="formOverlay">
+  <div class="overlay-card">
+    <div class="overlay-spinner"></div>
+    <div class="overlay-text">Processing Assessment</div>
+    <div class="overlay-sub">Analyzing 32 clinical features across 4 ensemble models using advanced machine learning algorithms</div>
+    <div class="overlay-progress">
+      <div class="overlay-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  
+  // Elements
+  const form = document.getElementById('assessmentForm');
+  const overlay = document.getElementById('formOverlay');
+  const submitBtn = document.getElementById('submitBtn');
+  const progressBar = document.getElementById('progressBar');
+  const progressPercentage = document.getElementById('progressPercentage');
+  const sidebar = document.getElementById('sidebar');
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  
+  // Form fields for progress tracking
+  const allInputs = form.querySelectorAll('input, select');
+  
+  // Mobile menu toggle
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', function() {
+      sidebar.classList.toggle('mobile-open');
+    });
+    
+    // Close sidebar when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+        sidebar.classList.remove('mobile-open');
+      }
+    });
+  }
+  
+  // Validation functions
+  function validateField(id, errorId, validationFn, successId) {
+    const element = document.getElementById(id);
+    const errorElement = document.getElementById(errorId);
+    const successElement = document.getElementById(successId);
+    
+    if (!element || !errorElement) return true;
+    
+    const isValid = validationFn(element);
+    
+    element.classList.toggle('error-border', !isValid);
+    element.classList.toggle('success', isValid && element.value !== '');
+    errorElement.classList.toggle('visible', !isValid);
+    
+    if (successElement) {
+      successElement.classList.toggle('visible', isValid && element.value !== '');
+    }
+    
+    return isValid;
+  }
+  
+  function validateAge(element) {
+    const value = parseInt(element.value, 10);
+    return !isNaN(value) && value >= 10 && value <= 50;
+  }
+  
+  function validateCGPA(element) {
+    const value = parseFloat(element.value);
+    return !isNaN(value) && value >= 0 && value <= 4.0;
+  }
+  
+  function validateHours(element) {
+    const value = parseInt(element.value, 10);
+    return !isNaN(value) && value >= 0 && value <= 20;
+  }
+  
+  function validateAll() {
+    let isValid = true;
+    
+    isValid = validateField('age', 'age-error', validateAge, 'age-success') && isValid;
+    isValid = validateField('cgpa', 'cgpa-error', validateCGPA, 'cgpa-success') && isValid;
+    isValid = validateField('work-study-hours', 'hours-error', validateHours, 'hours-success') && isValid;
+    
+    return isValid;
+  }
+  
+  // Real-time validation
+  form.addEventListener('input', function(e) {
+    const target = e.target;
+    
+    if (target.id === 'age') {
+      validateField('age', 'age-error', validateAge, 'age-success');
+    } else if (target.id === 'cgpa') {
+      validateField('cgpa', 'cgpa-error', validateCGPA, 'cgpa-success');
+    } else if (target.id === 'work-study-hours') {
+      validateField('work-study-hours', 'hours-error', validateHours, 'hours-success');
+    }
+    
+    updateProgress();
+  });
+  
+  // Radio checked styling (fallback for :has() compatibility)
+  function updateRadioChecked() {
+    document.querySelectorAll('.radio-option').forEach(function(opt) {
+      var radio = opt.querySelector('input[type="radio"]');
+      if (radio && radio.checked) {
+        opt.classList.add('checked');
+      } else {
+        opt.classList.remove('checked');
+      }
+    });
+  }
+  
+  document.querySelectorAll('.radio-group').forEach(function(group) {
+    group.addEventListener('change', function(e) {
+      if (e.target.type === 'radio') {
+        updateRadioChecked();
+      }
+    });
+  });
+  
+  // Progress tracking
+  function updateProgress() {
+    const totalFields = 15; // Total visible fields: Age, Gender, City, Degree, CGPA, AcademicP, StudySat, WorkP, JobSat, Hours, Sleep, Diet, FinStress, Suicidal, Family
+    let filledFields = 0;
+    const radioGroups = new Set();
+    
+    allInputs.forEach(input => {
+      if (input.type === 'hidden') return;
+      if (input.type === 'radio') {
+        if (radioGroups.has(input.name)) return;
+        radioGroups.add(input.name);
+        if (document.querySelector(`input[name="${CSS.escape(input.name)}"]:checked`)) {
+          filledFields++;
+        }
+        return;
+      }
+      if (input.type === 'number') {
+        if (input.value !== '' && !isNaN(parseFloat(input.value))) {
+          filledFields++;
+        }
+      } else {
+        if (input.value !== '') {
+          filledFields++;
+        }
+      }
+    });
+    
+    const percentage = Math.round((filledFields / totalFields) * 100);
+    progressBar.style.width = percentage + '%';
+    progressPercentage.textContent = percentage + '%';
+  }
+  
+  // Form submission
+  form.addEventListener('submit', function(e) {
+    if (!validateAll()) {
+      e.preventDefault();
+      
+      // Scroll to first error
+      const firstError = form.querySelector('.error-border');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstError.focus();
+      }
+      
+      return;
+    }
+    
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    overlay.classList.add('active');
+    
+    // Prevent double submission
+    setTimeout(() => {
+      if (!form.submitted) {
+        form.submitted = true;
+      }
+    }, 100);
+  });
+  
+  // Initialize progress and radio styling on page load
+  updateRadioChecked();
+  updateProgress();
+  
+  // Auto-save to localStorage (optional - preserve form state)
+  function saveFormState() {
+    const formData = {};
+    allInputs.forEach(input => {
+      formData[input.name || input.id] = input.value;
+    });
+    localStorage.setItem('assessmentFormData', JSON.stringify(formData));
+  }
+  
+  function loadFormState() {
+    const savedData = localStorage.getItem('assessmentFormData');
+    if (savedData) {
+      try {
+        const formData = JSON.parse(savedData);
+        allInputs.forEach(input => {
+          const key = input.name || input.id;
+          if (formData[key]) {
+            input.value = formData[key];
+          }
+        });
+        updateProgress();
+      } catch (e) {
+        console.error('Error loading saved form data:', e);
+      }
+    }
+  }
+  
+  // Uncomment to enable auto-save
+  // form.addEventListener('change', saveFormState);
+  // loadFormState();
+  
+  // Accessibility: Announce validation errors to screen readers
+  function announceError(message) {
+    const announcement = document.createElement('div');
+    announcement.setAttribute('role', 'alert');
+    announcement.setAttribute('aria-live', 'assertive');
+    announcement.className = 'sr-only';
+    announcement.textContent = message;
+    document.body.appendChild(announcement);
+    setTimeout(() => announcement.remove(), 3000);
+  }
+  
+  // Add screen reader only class for accessibility
+  const style = document.createElement('style');
+  style.textContent = '.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }';
+  document.head.appendChild(style);
+  
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── Packages ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{microtype}
+
+% ── Page Geometry ──
+\geometry{margin=2.5cm, bottom=3cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\onehalfspacing
+
+% ── Colors ──
+\definecolor{primary}{HTML}{6366f1}
+\definecolor{text}{HTML}{1e293b}
+\definecolor{muted}{HTML}{64748b}
+\definecolor{codebg}{HTML}{f8f9fb}
+\definecolor{border}{HTML}{e4e7ee}
+
+% ── Hyperlinks ──
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=primary,
+    citecolor=primary
+}
+
+% ── Header / Footer ──
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{muted}{Depression Risk Screening}}
+\fancyhead[R]{\small\textcolor{muted}{Project Report}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ── Section Formatting ──
+\titleformat{\section}{\Large\bfseries\color{primary}}{}{0em}{}[\vspace{-4pt}\rule{\textwidth}{1pt}]
+\titleformat{\subsection}{\large\bfseries\color{text}}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{text}}{}{0em}{}
+
+% ── Code Listings ──
+\lstdefinestyle{py}{
+    language=Python,
+    backgroundcolor=\color{codebg},
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{border},
+    numbers=none,
+    showstringspaces=false,
+    keywordstyle=\color{primary},
+    commentstyle=\color{muted}
+}
+\lstdefinestyle{bash}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{border}
+}
+
+% ── Custom Commands ──
+\newcommand{\field}[2]{\textbf{#1} & #2 \\ \hline}
+\newcommand{\riskrow}[2]{#1 & #2 \\ \hline}
+
+% ── Document ──
+\begin{document}
+
+% ══════════════════════════════════════════════════════════════════
+% TITLE PAGE
+% ══════════════════════════════════════════════════════════════════
+\begin{titlepage}
+\centering
+\vspace*{4cm}
+{\Huge\bfseries\color{primary} Depression Risk Screening}\\[12pt]
+{\Large ML-Powered Web Application}\\[24pt]
+\rule{0.6\textwidth}{1pt}\\[24pt]
+{\large Project Report}\\[12pt]
+{\normalsize\textcolor{muted}{May 2026}}\\[4cm]
+
+\vfill
+{\normalsize\textcolor{muted}{Student Depression Dataset \;$\cdot$\; Ensemble ML \;$\cdot$\; Flask Web App}}
+\end{titlepage}
+
+% ══════════════════════════════════════════════════════════════════
+% TABLE OF CONTENTS
+% ══════════════════════════════════════════════════════════════════
+\newpage
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════
+% 1. PROJECT OVERVIEW
+% ══════════════════════════════════════════════════════════════════
+\section{Project Overview}
+
+A production-grade clinical depression risk screening tool built with an ensemble machine learning pipeline served through a Flask web interface. The application accepts 16 raw input features across demographic, academic, and lifestyle categories, engineers 16 additional derived features, and returns a depression risk probability via a soft-voting ensemble of four classifiers.
+
+Key highlights:
+\begin{itemize}[nosep]
+    \item \textbf{Dataset}: ~27,900 clinical records (Kaggle Student Depression Dataset)
+    \item \textbf{Model}: Soft-voting ensemble (LR, RF, XGBoost, GBoost)
+    \item \textbf{Pipeline}: scikit-learn Pipeline with ColumnTransformer, scaling, encoding
+    \item \textbf{Interface}: Enterprise dashboard with 4-page web application
+    \item \textbf{API}: RESTful JSON prediction endpoint with full validation
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════
+% 2. PROJECT STRUCTURE
+% ══════════════════════════════════════════════════════════════════
+\section{Project Structure}
+
+\begin{lstlisting}[style=bash]
+E:\Student Depression\
+  app.py                                       # Flask application (261 lines)
+  student_depression_ensemble_v3_optimized.pkl # Trained ML pipeline (62.5 MB)
+  templates/
+    index.html          # Assessment form (1504 lines, 49 KB)
+    result.html         # Prediction result (459 lines, 19 KB)
+    about.html          # Model architecture (292 lines, 15 KB)
+    documentation.html  # API reference (360 lines, 20 KB)
+  Student Depression Dataset - Cleaned.csv     # Training data (2196 KB)
+  Student Depression.ipynb                     # Model training notebook
+  *.png                                        # Training visualizations
+  PROJECT_REPORT.md                            # Markdown report
+  PROJECT_REPORT.tex                           # LaTeX report (this file)
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════
+% 3. MACHINE LEARNING PIPELINE
+% ══════════════════════════════════════════════════════════════════
+\section{Machine Learning Pipeline}
+
+\subsection{Pipeline Architecture}
+
+The model is serialized as a single \texttt{sklearn.pipeline.Pipeline} object containing a \texttt{ColumnTransformer} preprocessor followed by a soft-voting \texttt{VotingClassifier}.
+
+\begin{lstlisting}[style=bash]
+Pipeline
+  preprocessor (ColumnTransformer)
+    num (27 columns: 11 raw + 16 engineered)
+      SimpleImputer(strategy='median')
+      StandardScaler()
+    ord (1 column: Sleep Duration)
+      SimpleImputer(strategy='most_frequent')
+      OrdinalEncoder(handle_unknown='use_encoded_value')
+    nom (4 columns: City, Profession, Dietary Habits, Degree)
+      SimpleImputer(strategy='most_frequent')
+      OneHotEncoder(handle_unknown='ignore')
+  classifier (VotingClassifier, soft voting)
+    LogisticRegression (C=0.1, solver=lbfgs)              weight = 1.0
+    RandomForestClassifier (n=400, max_depth=12)          weight = 2.0
+    XGBClassifier (n=200, max_depth=4, lr=0.05)           weight = 2.0
+    GradientBoostingClassifier (n=300, max_depth=5, lr=0.05) weight = 1.5
+\end{lstlisting}
+
+\subsection{Raw Input Features (16)}
+
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{p{3.5cm}p{2.5cm}p{2.5cm}p{5cm}}
+\hline
+\textbf{Name} & \textbf{Type} & \textbf{Range} & \textbf{Input Method} \\
+\hline
+Gender & Binary & 0 = Female, 1 = Male & Dropdown \\
+Age & Integer & 10--50 & Number input \\
+City & Text & Free entry & Text input \\
+Profession & Hidden & Always ``Student'' & Hidden input \\
+Academic Pressure & Integer & 1--5 & Radio group \\
+Work Pressure & Integer & 1--5 & Radio group \\
+CGPA & Float & 0.00--4.00 & Number input \\
+Study Satisfaction & Integer & 1--5 & Radio group \\
+Job Satisfaction & Integer & 1--5 & Radio group \\
+Sleep Duration & Categorical & 4 options & Dropdown \\
+Dietary Habits & Categorical & 4 options & Dropdown \\
+Degree & Text & Free entry & Text input \\
+Suicidal Thoughts & Binary & 0 = No, 1 = Yes & Dropdown \\
+Work/Study Hours & Integer & 0--20 & Number input \\
+Financial Stress & Integer & 1--5 & Radio group \\
+Family History of MI & Binary & 0 = No, 1 = Yes & Dropdown \\
+\hline
+\end{longtable}
+
+\subsection{Engineered Features (16)}
+
+\begin{longtable}{p{4.5cm}p{5.5cm}p{4.5cm}}
+\hline
+\textbf{Feature} & \textbf{Formula} & \textbf{Purpose} \\
+\hline
+Total\_Pressure & AP + WP & Cumulative stress load \\
+Pressure\_Satisfaction\_Ratio & (AP + WP) / (SS + JS + 1) & Pressure relative to satisfaction \\
+Sleep\_Deprived & 1 if ``Less than 5 hours'' & Binary deprivation flag \\
+Sleep\_Quality & Ordinal map (4 levels) & Quality score (0--3) \\
+High\_Risk & Suicidal $\land$ (FS $\geq$ 4) & High-risk interaction \\
+Stress\_Multiplier & AP $\times$ WP & Compounding stress \\
+Overall\_Satisfaction & SS + JS & Total satisfaction \\
+Satisfaction\_Pressure\_Ratio & (SS + JS + 1) / (AP + WP + 1) & Inverse satisfaction-pressure \\
+WorkLife\_Balance & (SS + JS) / (Hours + 1) & Balance metric \\
+FinAcad\_Stress\_Interaction & FS $\times$ AP & Double stress interaction \\
+Suicide\_Risk\_Severity & Suicidal $\times$ (FS + AP + WP) / 2 & Weighted risk severity \\
+MH\_Vulnerability & Weighted composite (5 factors) & Multi-factor vulnerability \\
+CGPA\_Performance\_Gap & (4.0 -- CGPA) $\times$ AP & Academic distress \\
+Perfect\_Health & All favorable conditions & Absence of risk markers \\
+Extreme\_Stress & $\geq$ 3 of 5 extreme conditions & Multi-domain extreme stress \\
+CGPA\_Achievement & CGPA / (AP + 1) & Performance under pressure \\
+\hline
+\end{longtable}
+
+\noindent\textit{Abbreviations:} AP = Academic Pressure, WP = Work Pressure, SS = Study Satisfaction, JS = Job Satisfaction, FS = Financial Stress.
+
+\subsection{Performance}
+
+\begin{itemize}[nosep]
+    \item \textbf{AUC-ROC}: 99.2\%
+    \item \textbf{Training samples}: ~27,900
+    \item \textbf{Cross-validation}: Stratified K-fold
+    \item \textbf{Voting strategy}: Soft (probability-weighted)
+    \item \textbf{Class weights}: [1.0, 2.0, 2.0, 1.5] across the four models
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════
+% 4. WEB APPLICATION
+% ══════════════════════════════════════════════════════════════════
+\section{Web Application Architecture}
+
+\subsection{Technology Stack}
+
+\begin{tabularx}{\textwidth}{l X}
+\hline
+\textbf{Component} & \textbf{Technology} \\
+\hline
+Backend & Python 3.13, Flask 3.x \\
+Frontend & HTML5, CSS3 (1500+ lines), JavaScript (vanilla) \\
+Model Runtime & scikit-learn 1.x, XGBoost \\
+Serialization & joblib \\
+\hline
+\end{tabularx}
+
+\subsection{Routes}
+
+\begin{tabularx}{\textwidth}{l l l X}
+\hline
+\textbf{Route} & \textbf{Method} & \textbf{Description} & \textbf{Response} \\
+\hline
+\texttt{/} & GET & Assessment form & \texttt{index.html} \\
+\texttt{/predict} & POST & Form submit $\rightarrow$ prediction & \texttt{result.html} \\
+\texttt{/about} & GET & Model architecture \& metrics & \texttt{about.html} \\
+\texttt{/documentation} & GET & API reference \& usage & \texttt{documentation.html} \\
+\texttt{/api/predict} & POST & JSON API $\rightarrow$ prediction & JSON \\
+\hline
+\end{tabularx}
+
+\subsection{Request Flow}
+
+\begin{enumerate}[nosep]
+    \item User loads \texttt{/} $\rightarrow$ \texttt{index.html} rendered with assessment form
+    \item User fills 15 visible fields (progress bar tracks completion)
+    \item Client-side validation runs in real-time (age, CGPA, hours)
+    \item On submit, loading overlay displays while server processes
+    \item Server validates all 16 fields for presence, type, and range
+    \item \texttt{engineer\_features()} derives 16 additional columns
+    \item \texttt{model.predict()} and \texttt{model.predict\_proba()} execute
+    \item \texttt{result.html} renders with prediction, probability, risk level, advice
+    \item JSON API (\texttt{/api/predict}) follows the same pipeline but returns JSON
+\end{enumerate}
+
+\subsection{Validation}
+
+\begin{itemize}[nosep]
+    \item \textbf{Client-side}: Real-time validation on Age (10--50), CGPA (0.00--4.00), Work/Study Hours (0--20) with success/error indicators under each field
+    \item \textbf{Server-side}: All 16 fields checked for presence, non-empty values, numeric type correctness, and range bounds
+    \item \textbf{API}: Returns HTTP 400 with descriptive error messages for missing fields, empty values, type errors, and out-of-range inputs
+\end{itemize}
+
+\subsection{Risk Classification}
+
+\begin{tabularx}{\textwidth}{l X}
+\hline
+\textbf{Depression Probability} & \textbf{Risk Level} \\
+\hline
+$< 25\%$ & VERY LOW RISK \\
+$25\%$ -- $49\%$ & LOW RISK \\
+$50\%$ -- $74\%$ & MODERATE RISK \\
+$\geq 75\%$ & HIGH RISK \\
+\hline
+\end{tabularx}
+
+% ══════════════════════════════════════════════════════════════════
+% 5. USER INTERFACE
+% ══════════════════════════════════════════════════════════════════
+\section{User Interface}
+
+\subsection{Design System}
+
+\begin{itemize}[nosep]
+    \item \textbf{Theme}: Light enterprise dashboard
+    \item \textbf{Colors}: Indigo primary (\#6366f1), slate text (\#1e293b), semantic success/danger/warning
+    \item \textbf{Typography}: Inter (Google Fonts), weights 300--700
+    \item \textbf{Layout}: Fixed sidebar (260px) + fluid main content
+    \item \textbf{Responsiveness}: 4 breakpoints (desktop / 1024px / 768px / 480px)
+    \item \textbf{Cross-browser}: \texttt{:has()} CSS with JavaScript \texttt{.checked} class fallback
+\end{itemize}
+
+\subsection{Form Pages}
+
+\textbf{index.html} --- 3-section assessment form:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Personal Information}: Gender (select), Age (number), City (text), Profession (hidden = ``Student'')
+    \item \textbf{Academic \& Work}: Degree (text), CGPA (number), 5 radio groups (1--5) for Academic Pressure, Study Satisfaction, Work Pressure, Job Satisfaction, Work/Study Hours (number)
+    \item \textbf{Lifestyle \& Health}: Sleep Duration (select), Dietary Habits (select), Financial Stress radio group, Suicidal Ideation (select), Family History (select)
+\end{enumerate}
+
+Key UI features:
+\begin{itemize}[nosep]
+    \item Progress bar tracking 15 visible fields (radio groups counted as one)
+    \item Model banner showing ensemble architecture and 99\% AUC-ROC
+    \item Google Forms-style radio button groups with circle indicators and labels
+    \item Real-time validation with green checkmarks and red error indicators
+    \item Loading overlay with animated progress bar during submission
+    \item localStorage auto-save (disabled by default, ready to enable)
+    \item Mobile sidebar toggle via fixed-position hamburger button
+\end{itemize}
+
+\subsection{Result Page}
+
+\textbf{result.html} displays:
+\begin{itemize}[nosep]
+    \item Primary outcome: ``Depression detected'' or ``No depression detected''
+    \item Color-coded risk level badge (red for HIGH, orange for MODERATE, green for LOW/VERY LOW)
+    \item Animated probability bar with percentage label
+    \item Metadata grid showing model confidence and risk classification
+    \item Contextual advice list (clinical recommendations or preventive guidance)
+    \item Action buttons: ``New Assessment'' and ``Print Report''
+\end{itemize}
+
+\subsection{Information Pages}
+
+\begin{itemize}[nosep]
+    \item \textbf{about.html}: Ensemble architecture (4 models), hyperparameters, performance metrics (99.2\% AUC-ROC), feature engineering descriptions, limitations disclaimer
+    \item \textbf{documentation.html}: Web interface guide, REST API reference with full JSON schema and curl example, input field table with types/ranges, risk classification table, validation rules
+\end{itemize}
+
+\subsection{Responsive Breakpoints}
+
+\begin{tabularx}{\textwidth}{l X}
+\hline
+\textbf{Screen Width} & \textbf{Behavior} \\
+\hline
+$>$ 1024px & 2-column form grid, sidebar pinned left \\
+768--1024px & Reduced padding, model-divider hidden \\
+$<$ 768px & Sidebar slides off-screen, hamburger toggle, 1-column form, radio options shrink \\
+$<$ 480px & Compact model banner, tighter radio groups (48px min), smaller text \\
+\hline
+\end{tabularx}
+
+% ══════════════════════════════════════════════════════════════════
+% 6. API REFERENCE
+% ══════════════════════════════════════════════════════════════════
+\section{API Reference}
+
+\subsection{POST /api/predict}
+
+\textbf{Request} (JSON):
+
+\begin{lstlisting}[style=py]
+{
+  "Gender": 1,
+  "Age": 22,
+  "City": "Karachi",
+  "Profession": "Student",
+  "Academic Pressure": 3,
+  "Work Pressure": 2,
+  "CGPA": 3.2,
+  "Study Satisfaction": 4,
+  "Job Satisfaction": 3,
+  "Sleep Duration": "7-8 hours",
+  "Dietary Habits": "Moderate",
+  "Degree": "BSc Computer Science",
+  "Have you ever had suicidal thoughts ?": 0,
+  "Work/Study Hours": 8,
+  "Financial Stress": 2,
+  "Family History of Mental Illness": 0
+}
+\end{lstlisting}
+
+\textbf{Response} (200):
+
+\begin{lstlisting}[style=py]
+{
+  "prediction": 0,
+  "depression_probability": 0.1308,
+  "no_depression_probability": 0.8692
+}
+\end{lstlisting}
+
+\textbf{Error} (400 / 500):
+
+\begin{lstlisting}[style=py]
+{ "error": "descriptive message" }
+\end{lstlisting}
+
+\textbf{curl example}:
+
+\begin{lstlisting}[style=bash]
+curl -X POST http://localhost:5000/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"Gender":1,"Age":22,"City":"Karachi","Profession":"Student",
+       "Academic Pressure":3,"Work Pressure":2,"CGPA":3.2,
+       "Study Satisfaction":4,"Job Satisfaction":3,
+       "Sleep Duration":"7-8 hours","Dietary Habits":"Moderate",
+       "Degree":"BSc CS","Have you ever had suicidal thoughts ?":0,
+       "Work/Study Hours":8,"Financial Stress":2,
+       "Family History of Mental Illness":0}'
+\end{lstlisting}
+
+% ══════════════════════════════════════════════════════════════════
+% 7. DEPLOYMENT
+% ══════════════════════════════════════════════════════════════════
+\section{Deployment}
+
+\subsection{Local Setup}
+
+\begin{lstlisting}[style=bash]
+pip install flask pandas numpy scikit-learn xgboost joblib
+python app.py
+# Application starts at http://localhost:5000
+\end{lstlisting}
+
+\subsection{Environment Variables}
+
+\begin{tabularx}{\textwidth}{l l X}
+\hline
+\textbf{Variable} & \textbf{Default} & \textbf{Description} \\
+\hline
+\texttt{PORT} & 5000 & Server port number \\
+\hline
+\end{tabularx}
+
+\subsection{Dependencies}
+
+\begin{itemize}[nosep]
+    \item flask (3.x)
+    \item pandas (2.x)
+    \item numpy (1.x)
+    \item scikit-learn (1.x)
+    \item xgboost (2.x)
+    \item joblib (1.x)
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════
+% 8. DEVELOPMENT NOTES
+% ══════════════════════════════════════════════════════════════════
+\section{Development Notes}
+
+\begin{itemize}[nosep]
+    \item \texttt{OneHotEncoder} uses \texttt{handle\_unknown='ignore'} --- unseen City/Degree/Profession values produce a zero vector rather than errors, making free-text inputs safe.
+    \item \texttt{OrdinalEncoder} for Sleep Duration uses \texttt{handle\_unknown='use\_encoded\_value'} for robustness against unexpected categorical values.
+    \item Feature names with spaces (e.g., \texttt{"Have you ever had suicidal thoughts ?"}) are preserved exactly to match the training data column names.
+    \item The \texttt{submit-bar} at the form bottom displays ``32 clinical features including 16 engineered indicators'' to communicate model sophistication to users.
+    \item All templates include a \texttt{<meta name="viewport">} tag and a consistent set of CSS custom properties (\texttt{--primary}, \texttt{--text}, \texttt{--border}, etc.) for theme maintainability.
+    \item The \texttt{:has()} CSS selector for radio button styling is paired with a JavaScript \texttt{.checked} class toggle for compatibility with browsers lacking native \texttt{:has()} support (Firefox $<$ 121).
+    \item Radio button progress tracking counts each group as a single field (using a JavaScript \texttt{Set} keyed by \texttt{input[name]}), so the 5 rating groups contribute 5 toward the 15-field total rather than 25.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════
+% END
+% ══════════════════════════════════════════════════════════════════
+\end{document}

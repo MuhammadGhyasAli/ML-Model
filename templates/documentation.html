@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Documentation for the Depression Risk Screening tool - API reference and usage guide.">
+<title>Documentation &mdash; Depression Risk Screening</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-4l-3 9L9 3l-3 9H2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --primary-subtle: rgba(99,102,241,0.08);
+  --primary-glow: rgba(99,102,241,0.15);
+  --bg: #fafbfc;
+  --surface: #ffffff;
+  --surface-alt: #f8f9fb;
+  --surface-hover: #f1f3f9;
+  --border: #e4e7ee;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.06);
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 260px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); padding: 28px 20px;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+
+.sidebar-logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; color: var(--text); margin-bottom: 40px; padding: 0 8px; }
+
+.sidebar-nav { list-style: none; flex: 1; }
+
+.sidebar-nav li a {
+  display: flex; align-items: center; gap: 12px;
+  color: inherit; text-decoration: none; width: 100%;
+}
+
+.sidebar-nav li {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  margin-bottom: 4px; cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.sidebar-nav li:hover:not(.active) { background: var(--surface-hover); color: var(--text); transform: translateX(2px); }
+
+.sidebar-nav li.active {
+  background: linear-gradient(135deg, var(--primary-subtle) 0%, var(--primary-glow) 100%);
+  color: var(--primary); font-weight: 600; box-shadow: var(--shadow-sm);
+}
+
+.sidebar-nav li.active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 60%; background: var(--primary); border-radius: 0 3px 3px 0;
+}
+
+.sidebar-footer { font-size: 12px; color: var(--text-muted); padding: 16px 12px 0; border-top: 1px solid var(--border); margin-top: 20px; line-height: 1.5; }
+
+.main { flex: 1; min-width: 0; padding: 40px 48px 80px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+.main-header { margin-bottom: 32px; }
+.main-header h1 {
+  font-size: 32px; font-weight: 700; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--primary-dark) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 8px;
+}
+.main-header p { font-size: 15px; color: var(--text-secondary); max-width: 600px; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 32px;
+  box-shadow: var(--shadow-sm); margin-bottom: 24px;
+  transition: all var(--transition);
+}
+
+.card:hover { box-shadow: var(--shadow); border-color: rgba(99,102,241,0.2); }
+
+.card h2 {
+  font-size: 18px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+
+.card h2 .icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.card p { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 12px; }
+.card p:last-child { margin-bottom: 0; }
+
+.card code {
+  background: var(--surface-alt); padding: 2px 8px; border-radius: 4px;
+  font-size: 13px; color: var(--primary); font-weight: 600;
+}
+
+.card pre {
+  background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: var(--radius-sm);
+  overflow-x: auto; font-size: 13px; line-height: 1.7; margin: 12px 0; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.card pre .comment { color: #94a3b8; }
+.card pre .keyword { color: #818cf8; }
+.card pre .string { color: #34d399; }
+.card pre .number { color: #fbbf24; }
+
+.card ol { padding-left: 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
+.card ol li { margin-bottom: 8px; }
+
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--surface-alt); font-weight: 600; color: var(--text); font-size: 13px; }
+td { color: var(--text-secondary); }
+tr:hover td { background: var(--surface-hover); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 12px 28px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all var(--transition);
+  text-decoration: none; border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff; box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+}
+
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+
+*:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: -260px; z-index: 50; transition: left 0.3s ease; }
+  .sidebar.mobile-open { left: 0; }
+  .main { padding: 24px 16px 50px; }
+  .main-header h1 { font-size: 24px; }
+  .card { padding: 24px 20px; }
+  .card h2 { font-size: 18px; }
+  table { font-size: 13px; }
+  th, td { padding: 8px 10px; }
+}
+
+@media (max-width: 480px) {
+  .main-header h1 { font-size: 20px; }
+  .main-header p { font-size: 14px; }
+  .card { padding: 20px 16px; }
+  .card h2 { font-size: 16px; }
+  .card h3 { font-size: 14px; }
+  table { font-size: 12px; }
+  th, td { padding: 6px 8px; }
+  .card ol { font-size: 13px; padding-left: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Depression Screen
+    </div>
+    <ul class="sidebar-nav">
+      <li>
+        <a href="/">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Assessment
+        </a>
+      </li>
+      <li>
+        <a href="/about">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          About the Model
+        </a>
+      </li>
+      <li class="active">
+        <a href="/documentation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Documentation
+        </a>
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <strong>Ensemble Model v3.0</strong>
+      Trained on 27.9K clinical samples
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-header">
+      <h1>Documentation</h1>
+      <p>Complete guide to using the Depression Risk Screening tool, including the web interface and API.</p>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </span>
+        Web Interface
+      </h2>
+      <p>The web interface provides a form-based assessment with the following sections:</p>
+      <ol>
+        <li><strong>Demographics</strong> &mdash; Enter your gender, age, city, and profession.</li>
+        <li><strong>Academic &amp; Work</strong> &mdash; Provide your degree, CGPA, pressure levels, satisfaction ratings, and work/study hours.</li>
+        <li><strong>Lifestyle &amp; Health History</strong> &mdash; Report sleep duration, dietary habits, financial stress, suicidal ideation history, and family mental health history.</li>
+      </ol>
+      <p>After completing all fields, click <strong>"Run Screening"</strong> to generate the risk assessment. Results are displayed with a probability score, risk level classification, and personalized recommendations.</p>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </span>
+        API Reference
+      </h2>
+      <p>The tool exposes a REST API endpoint for programmatic access:</p>
+
+      <h3 style="font-size:15px;font-weight:700;margin:16px 0 8px;color:var(--text);">POST <code>/api/predict</code></h3>
+      <p>Submit a JSON payload with all 16 required features. Returns a prediction result with probability scores.</p>
+
+      <p><strong>Request body (JSON):</strong></p>
+<pre>{
+  <span class="comment">// Required fields</span>
+  <span class="string">"Gender"</span>: <span class="number">1</span>,
+  <span class="string">"Age"</span>: <span class="number">22</span>,
+  <span class="string">"City"</span>: <span class="string">"Karachi"</span>,
+  <span class="string">"Profession"</span>: <span class="string">"Student"</span>,
+  <span class="string">"Academic Pressure"</span>: <span class="number">3</span>,
+  <span class="string">"Work Pressure"</span>: <span class="number">2</span>,
+  <span class="string">"CGPA"</span>: <span class="number">3.2</span>,
+  <span class="string">"Study Satisfaction"</span>: <span class="number">3</span>,
+  <span class="string">"Job Satisfaction"</span>: <span class="number">3</span>,
+  <span class="string">"Sleep Duration"</span>: <span class="string">"7-8 hours"</span>,
+  <span class="string">"Dietary Habits"</span>: <span class="string">"Healthy"</span>,
+  <span class="string">"Degree"</span>: <span class="string">"BSc Computer Science"</span>,
+  <span class="string">"Have you ever had suicidal thoughts ?"</span>: <span class="number">0</span>,
+  <span class="string">"Work/Study Hours"</span>: <span class="number">6</span>,
+  <span class="string">"Financial Stress"</span>: <span class="number">2</span>,
+  <span class="string">"Family History of Mental Illness"</span>: <span class="number">0</span>
+}</pre>
+
+      <p><strong>Response (JSON):</strong></p>
+<pre>{
+  <span class="string">"prediction"</span>: <span class="number">0</span>,
+  <span class="string">"depression_probability"</span>: <span class="number">0.0234</span>,
+  <span class="string">"no_depression_probability"</span>: <span class="number">0.9766</span>
+}</pre>
+
+      <p><strong>Example using curl:</strong></p>
+<pre>curl -X POST http://localhost:5000/api/predict \<br>  -H <span class="string">"Content-Type: application/json"</span> \<br>  -d <span class="string">'{"Gender":1,"Age":22,"City":"Karachi","Profession":"Student",<br>    "Academic Pressure":3,"Work Pressure":2,"CGPA":3.2,<br>    "Study Satisfaction":3,"Job Satisfaction":3,<br>    "Sleep Duration":"7-8 hours","Dietary Habits":"Healthy",<br>    "Degree":"BSc","Have you ever had suicidal thoughts ?":0,<br>    "Work/Study Hours":6,"Financial Stress":2,<br>    "Family History of Mental Illness":0}'</span></pre>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </span>
+        Input Field Reference
+      </h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Field Name</th><th>Type</th><th>Range / Values</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Gender</td><td>Integer</td><td>0 (Female), 1 (Male)</td><td>Biological sex</td></tr>
+            <tr><td>Age</td><td>Integer</td><td>10 - 50</td><td>Current age in years</td></tr>
+            <tr><td>City</td><td>String</td><td>Any city name</td><td>Current city of residence</td></tr>
+            <tr><td>Profession</td><td>String</td><td>Student (fixed)</td><td>Current occupation</td></tr>
+            <tr><td>Degree</td><td>String</td><td>Any degree name</td><td>Highest degree or program</td></tr>
+            <tr><td>CGPA</td><td>Float</td><td>0.00 - 4.00</td><td>Cumulative grade point average</td></tr>
+            <tr><td>Academic Pressure</td><td>Integer</td><td>1 - 5</td><td>Perceived academic stress</td></tr>
+            <tr><td>Study Satisfaction</td><td>Integer</td><td>1 - 5</td><td>Satisfaction with studies</td></tr>
+            <tr><td>Work Pressure</td><td>Integer</td><td>1 - 5</td><td>Perceived work stress</td></tr>
+            <tr><td>Job Satisfaction</td><td>Integer</td><td>1 - 5</td><td>Satisfaction with job</td></tr>
+            <tr><td>Work/Study Hours</td><td>Integer</td><td>0 - 20</td><td>Hours per day</td></tr>
+            <tr><td>Sleep Duration</td><td>String</td><td>See below</td><td>Average nightly sleep</td></tr>
+            <tr><td>Dietary Habits</td><td>String</td><td>Healthy / Moderate / Unhealthy / Others</td><td>Nutrition quality</td></tr>
+            <tr><td>Financial Stress</td><td>Integer</td><td>1 - 5</td><td>Financial worry level</td></tr>
+            <tr><td>Suicidal Thoughts</td><td>Integer</td><td>0 (No), 1 (Yes)</td><td>History of suicidal ideation</td></tr>
+            <tr><td>Family History</td><td>Integer</td><td>0 (No), 1 (Yes)</td><td>Family mental illness history</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Sleep Duration values:</strong> <code>Less than 5 hours</code>, <code>5-6 hours</code>, <code>7-8 hours</code>, <code>More than 8 hours</code></p>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </span>
+        Risk Classification
+      </h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Depression Probability</th><th>Risk Level</th><th>Interpretation</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0% - 24%</td><td>Very Low Risk</td><td>Minimal indicators of depression</td></tr>
+            <tr><td>25% - 49%</td><td>Low Risk</td><td>Some indicators present; monitor</td></tr>
+            <tr><td>50% - 74%</td><td>Moderate Risk</td><td>Significant indicators; consider professional consultation</td></tr>
+            <tr><td>75% - 100%</td><td>High Risk</td><td>Strong indicators; seek immediate professional help</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>
+        <span class="icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </span>
+        Validation &amp; Error Handling
+      </h2>
+      <p>The web interface performs client-side validation before submission. The server also validates all inputs:</p>
+      <ul class="model-list" style="list-style:none;padding:0;">
+        <li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-secondary);">
+          <span style="color:var(--success);font-weight:700;">&check;</span>
+          Required fields are checked for presence
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-secondary);">
+          <span style="color:var(--success);font-weight:700;">&check;</span>
+          Numeric fields are validated for type and range
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-secondary);">
+          <span style="color:var(--success);font-weight:700;">&check;</span>
+          Feature engineering is applied automatically
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-secondary);">
+          <span style="color:var(--success);font-weight:700;">&check;</span>
+          Errors return descriptive messages on the result page
+        </li>
+        <li style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:none;font-size:14px;color:var(--text-secondary);">
+          <span style="color:var(--success);font-weight:700;">&check;</span>
+          API errors return HTTP 400 with JSON error detail
+        </li>
+      </ul>
+    </div>
+
+    <a href="/" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Assessment
+    </a>
+  </main>
+</div>
+
+<button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
+<style>
+.mobile-menu-btn {
+  display: none;
+  position: fixed; bottom: 24px; right: 24px;
+  width: 56px; height: 56px;
+  background: var(--primary); color: white;
+  border: none; border-radius: 50%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+  cursor: pointer; z-index: 60;
+  align-items: center; justify-content: center;
+}
+@media (max-width: 768px) { .mobile-menu-btn { display: flex; } }
+</style>
+
+<script>
+(function() {
+  var sidebar = document.getElementById('sidebar');
+  var menuBtn = document.getElementById('mobileMenuBtn');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', function() { sidebar.classList.toggle('mobile-open'); });
+    document.addEventListener('click', function(e) {
+      if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) sidebar.classList.remove('mobile-open');
+    });
+  }
+})();
+</script>
+</body>
+</html>
